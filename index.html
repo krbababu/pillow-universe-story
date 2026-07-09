@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>藏在枕头里的宇宙 · 互动版</title>
+  <style>
+    /* ========== 全局 ========== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+      background: #0a0a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ========== 星空背景 ========== */
+    #starfield {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ========== 书本容器 ========== */
+    .book-container {
+      position: relative;
+      z-index: 1;
+      width: 92%;
+      max-width: 840px;
+      height: 88vh;
+      max-height: 640px;
+    }
+
+    .page {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      padding: 36px 44px 50px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .page.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* 封面 */
+    .page-cover {
+      background: linear-gradient(145deg, rgba(26,16,64,0.55) 0%, rgba(13,13,59,0.65) 40%, rgba(26,10,74,0.7) 100%),
+                  url('cover.jpg') center / cover no-repeat;
+      border: 2px solid rgba(255,215,0,0.3);
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+    .page-cover::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: radial-gradient(ellipse at 30% 50%, rgba(255,215,0,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* 内容页 */
+    .page-content {
+      background: linear-gradient(160deg, #1a1040 0%, #12123a 50%, #0f0f35 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ========== 页面内元素 ========== */
+
+    .cover-icon {
+      font-size: 72px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 30px rgba(255,215,0,0.3));
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    .cover-title {
+      font-size: 42px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 40px rgba(255,215,0,0.3), 0 0 80px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.6);
+      letter-spacing: 6px;
+      line-height: 1.3;
+    }
+    .cover-sub {
+      margin-top: 12px;
+      color: rgba(255,255,255,0.5);
+      font-size: 18px;
+      letter-spacing: 4px;
+    }
+    .cover-author {
+      margin-top: 36px;
+      color: rgba(255,255,255,0.25);
+      font-size: 14px;
+    }
+    .cover-hint {
+      margin-top: 20px;
+      color: rgba(255,215,0,0.4);
+      font-size: 14px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .page-label {
+      font-size: 13px;
+      color: rgba(255,215,0,0.5);
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+    }
+    .page-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffd700;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(255,215,0,0.2);
+    }
+    .page-story {
+      font-size: 18px;
+      line-height: 1.9;
+      color: rgba(255,255,255,0.88);
+      flex: 1;
+    }
+    .page-story p {
+      margin-bottom: 12px;
+      text-indent: 2em;
+    }
+    .page-story p.no-indent { text-indent: 0; }
+
+    .page-number {
+      position: absolute;
+      bottom: 16px;
+      right: 28px;
+      color: rgba(255,255,255,0.2);
+      font-size: 13px;
+      letter-spacing: 2px;
+      display: none;
+    }
+
+    /* ========== 插图框 ========== */
+    .illustration-box {
+      margin-top: 10px;
+      padding: 0;
+      border-radius: 14px;
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-shrink: 0;
+    }
+    .illustration-box .icon { display: none; }
+    .illustration-box .desc { display: none; }
+    .illustration-box .desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+    }
+    .illustration-box .desc strong { color: rgba(255,215,0,0.8); font-weight: 700; }
+
+    /* 故事插画图片 */
+    .story-img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      object-position: center 25%;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    /* ========== 角色介绍 ========== */
+    .char-card {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      margin: 6px 0 14px;
+    }
+    .char-avatar {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      flex-shrink: 0;
+      box-shadow: 0 0 40px rgba(255,215,0,0.2);
+    }
+    .char-info h3 { color: #ffd700; font-size: 22px; margin-bottom: 4px; }
+    .char-info p { color: rgba(255,255,255,0.7); font-size: 15px; line-height: 1.6; }
+    .char-trait {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: rgba(255,215,0,0.12);
+      color: #ffd700;
+      font-size: 12px;
+      margin-right: 5px;
+      margin-top: 4px;
+    }
+
+    /* ========== 选择按钮 ========== */
+    .choices {
+      display: flex;
+      gap: 18px;
+      margin: 14px 0 6px;
+      flex-shrink: 0;
+    }
+    .choice-btn {
+      flex: 1;
+      padding: 16px 12px;
+      border-radius: 16px;
+      border: 2px solid rgba(255,215,0,0.2);
+      background: rgba(255,215,0,0.05);
+      color: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .choice-btn:hover {
+      background: rgba(255,215,0,0.12);
+      border-color: #ffd700;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(255,215,0,0.15);
+    }
+    .choice-btn:active { transform: translateY(0); }
+    .choice-btn .emoji { font-size: 36px; }
+    .choice-btn .label {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffd700;
+    }
+    .choice-btn .desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.3;
+    }
+
+    /* ========== 结局特殊样式 ========== */
+    .ending-badge {
+      display: inline-block;
+      padding: 4px 16px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .ending-badge.good   { background: rgba(100,255,180,0.15); color: #64ffb4; border: 1px solid rgba(100,255,180,0.3); }
+    .ending-badge.sweet  { background: rgba(255,154,200,0.15); color: #ff9ac8; border: 1px solid rgba(255,154,200,0.3); }
+    .ending-badge.magic  { background: rgba(180,140,255,0.15); color: #b48cff; border: 1px solid rgba(180,140,255,0.3); }
+    .ending-badge.cool   { background: rgba(100,200,255,0.15); color: #64c8ff; border: 1px solid rgba(100,200,255,0.3); }
+
+    /* ========== 进度条 ========== */
+    .progress-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 0 0 20px 20px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      transition: width 0.6s ease;
+      border-radius: 0 0 20px 20px;
+    }
+
+    /* ========== 重玩按钮 ========== */
+    .restart-btn {
+      display: inline-block;
+      margin: 12px auto 0;
+      padding: 12px 32px;
+      border-radius: 40px;
+      border: 2px solid rgba(255,215,0,0.3);
+      background: rgba(255,215,0,0.08);
+      color: #ffd700;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+    .restart-btn:hover {
+      background: rgba(255,215,0,0.18);
+      border-color: #ffd700;
+      transform: scale(1.05);
+    }
+
+    /* ========== 路径回顾 ========== */
+    .path-review {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .path-step {
+      padding: 4px 14px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .path-step.done {
+      background: rgba(255,215,0,0.15);
+      color: #ffd700;
+    }
+    .path-step.wait {
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ========== 音乐按钮 ========== */
+    .music-btn {
+      position: fixed;
+      z-index: 30;
+      bottom: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,215,0,0.25);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+      color: #ffd700;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .music-btn:hover {
+      background: rgba(255,215,0,0.12);
+      border-color: #ffd700;
+      transform: scale(1.1);
+    }
+    .music-btn.muted {
+      opacity: 0.4;
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    @media (max-width: 600px) {
+      .book-container { width: 96%; height: 84vh; max-height: none; }
+      .page { padding: 20px 18px 44px; }
+      .cover-title { font-size: 26px; letter-spacing: 3px; }
+      .cover-icon { font-size: 48px; }
+      .page-title { font-size: 20px; }
+      .page-story { font-size: 15px; }
+      .char-card { flex-direction: column; text-align: center; gap: 10px; }
+      .char-avatar { width: 70px; height: 70px; font-size: 32px; }
+      .choices { flex-direction: column; gap: 10px; }
+      .choice-btn { padding: 12px; }
+      .choice-btn .emoji { font-size: 28px; }
+      .illustration-box { flex-direction: column; }
+      .path-review { gap: 4px; }
+      .path-step { font-size: 11px; padding: 3px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== 星空背景 ====== -->
+  <canvas id="starfield"></canvas>
+
+  <!-- ====== 书本容器 ====== -->
+  <div class="book-container" id="bookContainer">
+
+    <!-- ====== 封面 ====== -->
+    <div class="page page-cover" data-scene="cover">
+      <div class="cover-icon">🌙</div>
+      <div class="cover-title">藏在枕头里的宇宙</div>
+      <div class="cover-sub">· 互动故事书 ·</div>
+      <div class="cover-author">⭐ 你的选择，决定星星的命运 ⭐</div>
+      <div class="cover-hint" id="coverHint">点击开始冒险 ▶</div>
+      <div class="page-number">封面</div>
+    </div>
+
+    <!-- ====== 角色介绍 ====== -->
+    <div class="page page-content" data-scene="intro">
+      <div class="page-label">🌟 主角介绍</div>
+      <div class="page-title">星星</div>
+      <div class="char-card">
+        <div class="char-avatar">⭐</div>
+        <div class="char-info">
+          <h3>小名：星星</h3>
+          <p>7岁，一个充满好奇心的小女孩。<br>她脑子里装着十万个为什么，最大的烦恼就是——<br><strong style="color:#ffd700;">晚上根本睡不着！</strong></p>
+          <div>
+            <span class="char-trait">✨ 爱幻想</span>
+            <span class="char-trait">🌙 夜猫子</span>
+            <span class="char-trait">🚀 勇敢</span>
+            <span class="char-trait">🧸 抱枕爱好者</span>
+          </div>
+        </div>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-intro.jpg" alt="星星角色介绍">
+      </div>
+      <div class="page-number">开始</div>
+    </div>
+
+    <!-- ====== 枕头说话了 ====== -->
+    <div class="page page-content" data-scene="pillow-speaks">
+      <div class="page-label">🌙 第 1 页</div>
+      <div class="page-title">枕头说话了？</div>
+      <div class="page-story">
+        <p class="no-indent">晚上九点半，其他小朋友都睡着了。</p>
+        <p>星星翻了个身，又翻了个身。被子被她踢成了一团，枕头被她拍得扁扁的。</p>
+        <p>"唉——睡不着啊！"星星叹了口气，使劲拍了拍枕头。</p>
+        <p>"哎哟！别拍了，痒死我啦！"</p>
+        <p>星星吓得一下子坐了起来。她瞪大眼睛看着自己的枕头——</p>
+        <p>枕头正慢慢地、慢慢地裂开一条缝，里面透出<strong style="color:#ffd700;">金色的光芒</strong>。</p>
+        <p>"你……你是谁？"星星小声问。</p>
+        <p>"我是你的枕头啊！既然你睡不着，我带你去一个地方——<br>我的肚子里，<strong style="color:#ffd700;">藏着一整个宇宙</strong>哟！"</p>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-pillow-speaks.jpg" alt="枕头说话了">
+      </div>
+      <div class="page-number">第 1 页</div>
+    </div>
+
+    <!-- ====== 进入宇宙 ====== -->
+    <div class="page page-content" data-scene="enter-universe">
+      <div class="page-label">🌌 第 2 页</div>
+      <div class="page-title">枕头里的宇宙</div>
+      <div class="page-story">
+        <p class="no-indent">星星深吸一口气，钻进了枕头里。</p>
+        <p>哇啊啊啊——！</p>
+        <p>她发现自己正漂浮在<strong style="color:#ffd700;">一大片星空</strong>中！脚下没有地板，头顶没有天花板，只有数不清的星星在眨眼睛。</p>
+        <p>有一颗粉色的星球像棒棒糖一样转着圈，上面种满了会发光的糖果花。远处有一条亮晶晶的河流，河水发出叮叮咚咚的声音——那是一条<strong style="color:#ffd700;">用梦做的河</strong>。</p>
+        <p>"坐稳啦！"枕头变成了一艘软乎乎的小船，载着星星在银河里滑行。小船经过的地方，星星们自动排成了五线谱，唱起了一首摇篮曲。</p>
+        <p>星星忍不住伸手去摸那些音符，指尖碰到的一瞬间，音符变成了彩色的小蝴蝶，绕着她飞舞。</p>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-enter-universe.jpg" alt="枕头里的宇宙">
+      </div>
+      <div class="page-number">第 2 页</div>
+    </div>
+
+    <!-- ====== 决策点①：选方向 ====== -->
+    <div class="page page-content" data-scene="choice-direction">
+      <div class="page-label">🤔 你的选择</div>
+      <div class="page-title">你想先去哪里？</div>
+      <div class="page-story">
+        <p class="no-indent">星星在宇宙中飘着，眼前有两个地方都好好奇……</p>
+        <p style="text-align:center; color:rgba(255,255,255,0.5); font-size:15px;">用手指点一点，帮星星做选择吧！👇</p>
+      </div>
+      <div class="choices">
+        <div class="choice-btn" data-choice="candy">
+          <span class="emoji">🍬</span>
+          <span class="label">去糖果星球</span>
+          <span class="desc">粉色星球上全是发光的糖果花，<br>香香甜甜的，好想吃一口！</span>
+        </div>
+        <div class="choice-btn" data-choice="river">
+          <span class="emoji">🌊</span>
+          <span class="label">沿着梦河走</span>
+          <span class="desc">梦河闪闪发光，叮咚作响，<br>河面上还有会唱歌的星星！</span>
+        </div>
+      </div>
+      <div class="page-number">✨ 第一次选择</div>
+    </div>
+
+    <!-- ====== 糖果星球场景 ====== -->
+    <div class="page page-content" data-scene="candy-planet">
+      <div class="page-label">🍬 第 3 页 · 糖果星球</div>
+      <div class="page-title">甜甜的冒险</div>
+      <div class="page-story">
+        <p class="no-indent">星星朝着粉色星球飘去。越靠近，香味越浓——是草莓味、巧克力味、还有棉花糖的味道混在一起！</p>
+        <p>她落在星球上，发现这里的草地是抹茶味的，花朵是棒棒糖做的，连小溪里流的都是<strong style="color:#ff9ac8;">草莓牛奶</strong>！</p>
+        <p>星星忍不住摘了一朵花放进嘴里——哇，是夹心软糖！她又摘了一颗星星果实，咬一口，里面流出甜甜的蜂蜜。</p>
+        <p>"太棒啦——！"星星在糖果星球上蹦蹦跳跳。</p>
+        <p>这时，枕头忽然紧张地喊了起来——</p>
+        <p style="color:#ff6b6b; font-weight:700;">"星星——！天快亮了！通道在缩小了！！"</p>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-candy-planet.jpg" alt="糖果星球">
+      </div>
+      <div class="page-number">第 3 页</div>
+    </div>
+
+    <!-- ====== 梦河场景 ====== -->
+    <div class="page page-content" data-scene="dream-river">
+      <div class="page-label">🌊 第 3 页 · 梦河</div>
+      <div class="page-title">星星的音乐会</div>
+      <div class="page-story">
+        <p class="no-indent">星星朝着闪闪发光的梦河飘去。河水是透明的，像一块流动的水晶，发出<strong style="color:#64c8ff;">叮咚、叮咚</strong>的清脆声音。</p>
+        <p>河面上漂浮着一颗颗会唱歌的星星。它们排成队伍，时而变成五线谱唱摇篮曲，时而变成彩虹桥，从河这边跨到那边。</p>
+        <p>星星坐在河边，把脚伸进河水里——河水暖暖的，有一点点痒。她闭上眼睛，听着星星们的音乐会。</p>
+        <p>"太好听了……"星星喃喃地说。</p>
+        <p>这时，枕头忽然紧张地喊了起来——</p>
+        <p style="color:#ff6b6b; font-weight:700;">"星星——！天快亮了！通道在缩小了！！"</p>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-dream-river.jpg" alt="梦河">
+      </div>
+      <div class="page-number">第 3 页</div>
+    </div>
+
+    <!-- ====== 决策点②：回不回去？ ====== -->
+    <div class="page page-content" data-scene="choice-go-back">
+      <div class="page-label">⚠️ 你的选择</div>
+      <div class="page-title">通道快关了！</div>
+      <div class="page-story">
+        <p class="no-indent">枕头焦急地喊着："星星，快跟我回去吧！不然就来不及了！"</p>
+        <p style="text-align:center; color:rgba(255,255,255,0.5); font-size:15px;">💫 星星该怎么办？</p>
+      </div>
+      <div class="choices">
+        <div class="choice-btn" data-choice="go">
+          <span class="emoji">🏃</span>
+          <span class="label">立刻跟枕头回去</span>
+          <span class="desc">虽然舍不得，但听话更重要！<br>以后还可以再来～</span>
+        </div>
+        <div class="choice-btn" data-choice="stay">
+          <span class="emoji">🎠</span>
+          <span class="label">再玩一会儿</span>
+          <span class="desc">就一小下！这么好玩的地方<br>怎么舍得走呀！</span>
+        </div>
+      </div>
+      <div class="page-number">✨ 第二次选择</div>
+    </div>
+
+    <!-- ====== 结局①：糖果 + 回去 = 甜梦守护者 ====== -->
+    <div class="page page-content" data-scene="ending-good-girl">
+      <div class="ending-badge good">🌙 结局 · 甜梦守护者</div>
+      <div class="page-title">晚安，乖孩子</div>
+      <div class="page-story">
+        <p class="no-indent">星星虽然好想再吃一颗糖果花，但她深吸一口气，转身朝着枕头跑去。</p>
+        <p>"我们回去吧！"她大声说。</p>
+        <p>"好孩子！"枕头变成一座光桥，托着星星飞向裂缝。就在通道合拢的最后一瞬间，她们双双跳了出去。</p>
+        <p>嘭！星星摔回了软软的床上。窗外，天边泛起了鱼肚白。</p>
+        <p>"呼——好累呀……"星星抱着枕头，困意像潮水一样涌上来。</p>
+        <p>枕头轻轻地说：<strong style="color:#ffd700;">"你虽然贪吃，但是很听话。明天晚上，我带你去更好玩的地方！"</strong></p>
+        <p>星星笑了。她紧紧抱住枕头，第一次觉得睡觉是一件这么期待的事。</p>
+        <p style="text-align:center; color:rgba(255,215,0,0.5); margin-top:12px;">—— 🌟 晚安，甜梦守护者 🌟 ——</p>
+      </div>
+      <div class="path-review">
+        <span class="path-step done">🍬 糖果星球</span>
+        <span class="path-step done">🏃 听话回家</span>
+        <span class="path-step done">🌙 甜梦守护者</span>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-ending-good-girl.jpg" alt="甜梦守护者">
+      </div>
+      <div style="text-align:center;">
+        <div class="restart-btn" onclick="goToScene('cover')">🔄 再读一次</div>
+      </div>
+      <div class="page-number">THE END</div>
+    </div>
+
+    <!-- ====== 结局②：糖果 + 留下 = 棉花糖奇遇 ====== -->
+    <div class="page page-content" data-scene="ending-cotton-candy">
+      <div class="ending-badge sweet">☁️ 结局 · 棉花糖奇遇</div>
+      <div class="page-title">世界上最甜的梦</div>
+      <div class="page-story">
+        <p class="no-indent">星星看了看越来越小的裂缝，又看了看手里还剩下的半朵糖果花。</p>
+        <p>"就……再吃一口！"她把糖果花塞进嘴里，好甜呀！</p>
+        <p>等她抬起头来时，裂缝已经<strong style="color:#ff6b6b;">完全合拢了</strong>。</p>
+        <p>"啊……回不去了……"星星有点慌。</p>
+        <p>但枕头却没有生气。它抖了抖，温柔地说：<strong style="color:#ffd700;">"回不去也没关系，我们就睡在这里吧。"</strong></p>
+        <p>云朵棉花糖星球慢慢飘过来，软软的、暖暖的。星星躺在云朵上，像睡在一张全世界最舒服的大床上。枕头变成了一床金光的被子，盖在她身上。</p>
+        <p>星星做了一个世界上最甜的梦。第二天醒来，她发现枕头湿了一片——原来是云朵棉花糖化了！</p>
+        <p style="text-align:center; color:rgba(255,215,0,0.5); margin-top:12px;">—— 🌟 贪吃也是一种幸运 🌟 ——</p>
+      </div>
+      <div class="path-review">
+        <span class="path-step done">🍬 糖果星球</span>
+        <span class="path-step done">🎠 再玩一会儿</span>
+        <span class="path-step done">☁️ 棉花糖奇遇</span>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-cotton-candy.jpg" alt="棉花糖奇遇">
+      </div>
+      <div style="text-align:center;">
+        <div class="restart-btn" onclick="goToScene('cover')">🔄 再读一次</div>
+      </div>
+      <div class="page-number">THE END</div>
+    </div>
+
+    <!-- ====== 结局③：梦河 + 回去 = 星星音符 ====== -->
+    <div class="page page-content" data-scene="ending-star-note">
+      <div class="ending-badge magic">🎵 结局 · 星星音符</div>
+      <div class="page-title">口袋里的音乐</div>
+      <div class="page-story">
+        <p class="no-indent">星星的脚从梦河里抬起来，她依依不舍地看了看那些唱歌的星星。</p>
+        <p>"我……我能带走一颗星星吗？"她小声问。</p>
+        <p>一颗最小的星星跳了起来，落在她的掌心里，变成了一个<strong style="color:#b48cff;">亮晶晶的音符</strong>。</p>
+        <p>"谢谢你！"星星把音符小心地放进口袋，跟着枕头跑向裂缝。她们刚刚好赶上！</p>
+        <p>回到家，星星躺在床上，摸了摸口袋——那颗音符还在。</p>
+        <p>从那天起，每天晚上星星一躺下，口袋里的音符就会轻轻唱起一首温柔的摇篮曲。她的梦也变得像音乐一样美。</p>
+        <p><strong style="color:#ffd700;">有时候，最美好的东西，就是一个小小的善良的念头。</strong></p>
+        <p style="text-align:center; color:rgba(255,215,0,0.5); margin-top:12px;">—— 🌟 善良的人总会得到礼物 🌟 ——</p>
+      </div>
+      <div class="path-review">
+        <span class="path-step done">🌊 梦河</span>
+        <span class="path-step done">🏃 听话回家</span>
+        <span class="path-step done">🎵 星星音符</span>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-star-note.jpg" alt="星星音符">
+      </div>
+      <div style="text-align:center;">
+        <div class="restart-btn" onclick="goToScene('cover')">🔄 再读一次</div>
+      </div>
+      <div class="page-number">THE END</div>
+    </div>
+
+    <!-- ====== 结局④：梦河 + 留下 = 彩虹通道 ====== -->
+    <div class="page page-content" data-scene="ending-rainbow">
+      <div class="ending-badge cool">🌈 结局 · 彩虹通道</div>
+      <div class="page-title">勇敢者的礼物</div>
+      <div class="page-story">
+        <p class="no-indent">星星舍不得走。她顺着梦河漂了下去，越漂越远。</p>
+        <p>"星星！通道要关了！"枕头急得直跳。</p>
+        <p>星星抬起头，才发现裂缝已经变成了一条细线。</p>
+        <p>"糟了！"她慌了。</p>
+        <p>这时，梦河里跳出一只<strong style="color:#64c8ff;">月亮精灵</strong>，微笑着说："别怕，我认识另一条回家的路。"</p>
+        <p>月亮精灵挥了挥手，一道<strong style="color:#ffd700;">彩虹桥</strong>从梦河尽头一直延伸到星星的窗外！星星跳上彩虹桥——虽然绕了远路，可她看到了极光森林、流星雨瀑布，还有用云朵做的旋转木马！</p>
+        <p>她在天亮前的最后一秒跳回床上，心扑通扑通跳。</p>
+        <p>"这条路……好美啊。"星星喃喃地说，然后沉沉地睡着了。</p>
+        <p><strong style="color:#ffd700;">有时候，勇敢地多待一会儿，反而能看到不一样的风景。</strong></p>
+        <p style="text-align:center; color:rgba(255,215,0,0.5); margin-top:12px;">—— 🌟 勇敢的人会遇到奇迹 🌟 ——</p>
+      </div>
+      <div class="path-review">
+        <span class="path-step done">🌊 梦河</span>
+        <span class="path-step done">🎠 再玩一会儿</span>
+        <span class="path-step done">🌈 彩虹通道</span>
+      </div>
+      <div class="illustration-box">
+        <img class="story-img" src="scene-rainbow.jpg" alt="彩虹通道">
+      </div>
+      <div style="text-align:center;">
+        <div class="restart-btn" onclick="goToScene('cover')">🔄 再读一次</div>
+      </div>
+      <div class="page-number">THE END</div>
+    </div>
+
+    <!-- ====== 进度条 ====== -->
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+    </div>
+
+  </div>
+
+  <!-- ====== 音乐控制按钮 ====== -->
+  <button class="music-btn" id="musicBtn" title="背景音乐">🎵</button>
+
+  <script>
+    // ====== 星空背景 ======
+    (function() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+      let W, H;
+
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < 180; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: Math.random() * 2 + 0.5,
+          alpha: Math.random(),
+          speed: Math.random() * 0.008 + 0.003
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+          s.alpha += s.speed;
+          const a = (Math.sin(s.alpha) + 1) / 2;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,215,0,${a * 0.7 + 0.1})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // ====== 场景图 ======
+    // 定义每个场景的「下一个场景」或「选择处理函数」
+    const sceneFlow = {
+      'cover':        { next: 'intro' },
+      'intro':        { next: 'pillow-speaks' },
+      'pillow-speaks':{ next: 'enter-universe' },
+      'enter-universe':{ next: 'choice-direction' },
+      'choice-direction': {
+        // 由选择按钮处理
+        choices: {
+          'candy': 'candy-planet',
+          'river': 'dream-river'
+        }
+      },
+      'candy-planet':   { next: 'choice-go-back' },
+      'dream-river':    { next: 'choice-go-back' },
+      'choice-go-back': {
+        choices: {
+          'go':   null,   // 由 JS 根据前一个场景决定
+          'stay': null
+        }
+      },
+      'ending-good-girl':   {},
+      'ending-cotton-candy':{},
+      'ending-star-note':   {},
+      'ending-rainbow':     {}
+    };
+
+    // 路径记录
+    let path = [];
+
+    // ====== 场景切换 ======
+    const pages = document.querySelectorAll('.page');
+    const progressFill = document.getElementById('progressFill');
+
+    // 场景 -> 进度映射
+    const progressMap = {
+      'cover': 0,
+      'intro': 8,
+      'pillow-speaks': 18,
+      'enter-universe': 28,
+      'choice-direction': 35,
+      'candy-planet': 45,
+      'dream-river': 45,
+      'choice-go-back': 55,
+      'ending-good-girl': 100,
+      'ending-cotton-candy': 100,
+      'ending-star-note': 100,
+      'ending-rainbow': 100
+    };
+
+    function goToScene(sceneId) {
+      // 隐藏所有页面
+      pages.forEach(p => p.classList.remove('active'));
+
+      // 显示目标页面
+      const target = document.querySelector(`[data-scene="${sceneId}"]`);
+      if (target) {
+        target.classList.add('active');
+        // 滚动到顶部
+        target.scrollTop = 0;
+      }
+
+      // 更新进度条
+      const pct = progressMap[sceneId] || 0;
+      progressFill.style.width = pct + '%';
+    }
+
+    // ====== 处理选择 ======
+    function handleChoice(choiceBtn) {
+      const choice = choiceBtn.dataset.choice;
+      const currentScene = document.querySelector('.page.active');
+      if (!currentScene) return;
+      const sceneId = currentScene.dataset.scene;
+
+      path.push({ scene: sceneId, choice: choice });
+
+      let nextScene = null;
+
+      if (sceneId === 'choice-direction') {
+        // 决策点①：选方向
+        nextScene = choice === 'candy' ? 'candy-planet' : 'dream-river';
+      } else if (sceneId === 'choice-go-back') {
+        // 决策点②：回不回去
+        // 需要知道之前去了哪里
+        const prevChoice = path.find(p => p.scene === 'choice-direction');
+        const wentTo = prevChoice ? prevChoice.choice : 'candy';
+
+        if (choice === 'go') {
+          // 回去了
+          nextScene = wentTo === 'candy' ? 'ending-good-girl' : 'ending-star-note';
+        } else {
+          // 留下了
+          nextScene = wentTo === 'candy' ? 'ending-cotton-candy' : 'ending-rainbow';
+        }
+      }
+
+      if (nextScene) {
+        goToScene(nextScene);
+      }
+    }
+
+    // ====== 点击页面翻页（非选择页） ======
+    document.querySelectorAll('.page').forEach(page => {
+      page.addEventListener('click', (e) => {
+        // 不处理选择页（有选择按钮的页面让按钮自己处理）
+        if (page.dataset.scene === 'choice-direction' || page.dataset.scene === 'choice-go-back') return;
+        // 不处理结局页（有「再读一次」按钮）
+        if (page.dataset.scene.startsWith('ending-')) return;
+        // 不处理按钮本身和插图框
+        if (e.target.closest('.choice-btn') || e.target.closest('.restart-btn') || e.target.closest('.illustration-box')) return;
+
+        const sceneId = page.dataset.scene;
+        if (sceneId === 'cover') {
+          goToScene('intro');
+          return;
+        }
+        const flow = sceneFlow[sceneId];
+        if (flow && flow.next) {
+          goToScene(flow.next);
+        }
+      });
+    });
+
+    // ====== 点击选择按钮 ======
+    document.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => handleChoice(btn));
+    });
+
+    // ====== 键盘支持 ======
+    document.addEventListener('keydown', (e) => {
+      // 在非选择页翻页
+      const active = document.querySelector('.page.active');
+      if (!active) return;
+      const sceneId = active.dataset.scene;
+
+      if (sceneId === 'choice-direction' || sceneId === 'choice-go-back') {
+        // 选择页：左右键选第一个/第二个选择
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          const btns = active.querySelectorAll('.choice-btn');
+          if (btns.length > 0) btns[0].click();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const btns = active.querySelectorAll('.choice-btn');
+          if (btns.length > 1) btns[1].click();
+        }
+        return;
+      }
+
+      // 非选择页：右箭头/空格前进到下一场景
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        const flow = sceneFlow[sceneId];
+        if (flow && flow.next) {
+          goToScene(flow.next);
+        }
+      }
+    });
+
+    // ====== 音效引擎（Web Audio API） ======
+    const sound = {
+      ctx: null,
+      musicOn: true,
+      audio: null,
+
+      _init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      // 翻页音效 — 模拟纸质书翻页
+      pageTurn() {
+        try {
+          this._init();
+          const sr = this.ctx.sampleRate;
+          const now = this.ctx.currentTime;
+
+          // ① 纸面摩擦音 — 短促的高频噪声
+          const len1 = sr * 0.06;
+          const buf1 = this.ctx.createBuffer(1, len1, sr);
+          const d1 = buf1.getChannelData(0);
+          for (let i = 0; i < len1; i++) {
+            d1[i] = (Math.random() * 2 - 1) * (1 - i / len1);
+          }
+          const src1 = this.ctx.createBufferSource();
+          src1.buffer = buf1;
+          const bp1 = this.ctx.createBiquadFilter();
+          bp1.type = 'bandpass';
+          bp1.frequency.setValueAtTime(3000, now);
+          bp1.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+          bp1.Q.value = 2;
+          const g1 = this.ctx.createGain();
+          g1.gain.setValueAtTime(0.3, now);
+          g1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          src1.connect(bp1); bp1.connect(g1); g1.connect(this.ctx.destination);
+          src1.start(now);
+
+          // ② 翻动风声 — 低频 sweep
+          const len2 = sr * 0.12;
+          const buf2 = this.ctx.createBuffer(1, len2, sr);
+          const d2 = buf2.getChannelData(0);
+          for (let i = 0; i < len2; i++) {
+            const t = i / len2;
+            d2[i] = (Math.random() * 2 - 1) * (1 - t * t) * 0.6;
+          }
+          const src2 = this.ctx.createBufferSource();
+          src2.buffer = buf2;
+          const bp2 = this.ctx.createBiquadFilter();
+          bp2.type = 'bandpass';
+          bp2.frequency.setValueAtTime(1500, now + 0.02);
+          bp2.frequency.exponentialRampToValueAtTime(200, now + 0.14);
+          bp2.Q.value = 1.5;
+          const g2 = this.ctx.createGain();
+          g2.gain.setValueAtTime(0.001, now);
+          g2.gain.linearRampToValueAtTime(0.25, now + 0.04);
+          g2.gain.setValueAtTime(0.25, now + 0.10);
+          g2.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          src2.connect(bp2); bp2.connect(g2); g2.connect(this.ctx.destination);
+          src2.start(now + 0.02);
+        } catch(e) { /* 静默失败 */ }
+      },
+
+      // 点击音效 — 短促的「啵」
+      click() {
+        try {
+          this._init();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.06);
+          const gn = this.ctx.createGain();
+          gn.gain.setValueAtTime(0.5, now);
+          gn.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gn); gn.connect(this.ctx.destination);
+          osc.start(now); osc.stop(now + 0.1);
+        } catch(e) {}
+      },
+
+      // 背景音乐 — AI 生成歌曲
+      startMusic() {
+        this.musicOn = true;
+        if (!this.audio) {
+          this.audio = new Audio('bgm.mp3');
+          this.audio.loop = true;
+          this.audio.volume = 0.5;
+        }
+        this.audio.play().catch(() => {});
+      },
+
+      stopMusic() {
+        this.musicOn = false;
+        if (this.audio) {
+          this.audio.pause();
+          this.audio.currentTime = 0;
+        }
+      },
+
+      toggleMusic() {
+        if (this.musicOn) { this.stopMusic(); } else { this.startMusic(); }
+        return this.musicOn;
+      }
+    };
+
+    // ====== 音乐按钮 ======
+    const musicBtn = document.getElementById('musicBtn');
+    musicBtn.addEventListener('click', (e) => {
+      sound._init();
+      const on = sound.toggleMusic();
+      musicBtn.textContent = on ? '🎵' : '🔇';
+      musicBtn.classList.toggle('muted', !on);
+      sound.click();
+      e.stopPropagation();
+    });
+
+    // 用户首次点击页面任意位置时，自动播放音乐（浏览器需要用户手势）
+    document.addEventListener('click', () => {
+      sound._init();
+      if (!sound.audio || sound.audio.paused) {
+        sound.startMusic();
+        musicBtn.textContent = '🎵';
+        musicBtn.classList.remove('muted');
+      }
+    }, { once: true });
+
+    // 尝试立即自动播放（部分浏览器支持）
+    setTimeout(() => {
+      sound._init();
+      sound.startMusic();
+      // 如果 autoplay 被拦截，play() 会静默失败，等用户点击就好
+    }, 300);
+
+    // ====== 在翻页和选择中嵌入音效 ======
+    const originalGoToScene = goToScene;
+    goToScene = function(sceneId) {
+      originalGoToScene(sceneId);
+      requestAnimationFrame(() => sound.pageTurn());
+    };
+
+    const originalHandleChoice = handleChoice;
+    handleChoice = function(choiceBtn) {
+      originalHandleChoice(choiceBtn);
+      sound.click();
+    };
+
+    // ====== 初始化 ======
+    goToScene('cover');
+  </script>
+
+</body>
+</html>
